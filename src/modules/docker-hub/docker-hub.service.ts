@@ -11,6 +11,7 @@ import { Event } from 'src/events/events.enum';
 export class DockerHubService {
   private readonly dockerHubToken: string;
   private readonly logger: Logger = new Logger(DockerHubService.name);
+  private readonly webhookImageCounter: { [key: string]: number } = {};
 
   constructor(
     private readonly eventEmitter: EventEmitter2,
@@ -31,6 +32,25 @@ export class DockerHubService {
     dockerHubWebhookPayloadDto: DockerHubWebhookPayloadDto,
   ): void {
     this.validateToken(token);
+    this.validateWebhookCallback(dockerHubWebhookPayloadDto.callback_url);
+
+    /**
+     * DockerHub will send 3 webhook calls for each container image that is built since we target 3 architectures.
+     * The webhookImageCounter keeps track of how many webhook calls have been received for each image. This is
+     * done to make sure that the container image is updated in Kubernetes only when all the architecture images
+     * have been pushed to DockerHub and are available to be pulled by the Kubernetes cluster.
+     */
+    const fullImageName = `${dockerHubWebhookPayloadDto.repository.repo_name}:${dockerHubWebhookPayloadDto.push_data.tag}`;
+    if (!this.webhookImageCounter[fullImageName]) {
+      this.webhookImageCounter[fullImageName] = 1;
+      return;
+    }
+    this.webhookImageCounter[fullImageName] += 1;
+    if (this.webhookImageCounter[fullImageName] !== 3) {
+      return;
+    }
+    this.webhookImageCounter[fullImageName] = 0;
+
     this.logger.log(
       `DockerHub webhook received for ${dockerHubWebhookPayloadDto.repository.repo_name}:${dockerHubWebhookPayloadDto.push_data.tag}`,
     );
@@ -41,7 +61,6 @@ export class DockerHubService {
         dockerHubWebhookPayloadDto.push_data.tag,
       ),
     );
-    this.validateWebhookCallback(dockerHubWebhookPayloadDto.callback_url);
   }
 
   /**

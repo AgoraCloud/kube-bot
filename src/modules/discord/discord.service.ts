@@ -57,9 +57,7 @@ export class DiscordService implements OnModuleInit {
    * @param message the message to send
    */
   private async sendMessage(message: string): Promise<void> {
-    if (this.botChannel) {
-      await this.botChannel.send(message);
-    }
+    await this.botChannel.send(message);
   }
 
   /**

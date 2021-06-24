@@ -7,9 +7,11 @@ import { Config, DiscordConfig } from 'src/config/configuration.interface';
 const discordFactory = {
   provide: DiscordClient,
   useFactory: (configService: ConfigService<Config>) => {
-    const discordClient: DiscordClient = new DiscordClient();
+    const discordClient: DiscordClient = new DiscordClient({
+      allowedMentions: { parse: ['users', 'roles'] },
+    });
     const botToken: string =
-      configService.get<DiscordConfig>('discord').botToken;
+      configService.get<DiscordConfig>('discord').bot.token;
     discordClient.login(botToken);
     return discordClient;
   },

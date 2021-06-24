@@ -14,8 +14,34 @@ interface Config {
  * The kube-bot Discord configuration
  */
 interface DiscordConfig {
-  botToken: string;
-  botChannelId: string;
+  bot: DiscordBotConfig;
+  roles: DiscordRolesConfig;
+  users: DiscordUsersConfig;
+}
+
+/**
+ * The kube-bot Discord bot configuration
+ */
+interface DiscordBotConfig {
+  token: string;
+  channelId: string;
+}
+
+/**
+ * The kube-bot Discord roles configuration
+ */
+interface DiscordRolesConfig {
+  serverRoleId: string;
+  uiRoleId: string;
+}
+
+/**
+ * The kube-bot Discord users configuration
+ */
+interface DiscordUsersConfig {
+  saidsUserId: string;
+  waleedsUserId: string;
+  marcsUserId: string;
 }
 
 /**
@@ -44,4 +70,13 @@ enum LogLevel {
   Verbose = 'verbose',
 }
 
-export { Config, DiscordConfig, DockerHubConfig, EnvironmentConfig, LogLevel };
+export {
+  Config,
+  DiscordConfig,
+  DiscordBotConfig,
+  DiscordRolesConfig,
+  DiscordUsersConfig,
+  DockerHubConfig,
+  EnvironmentConfig,
+  LogLevel,
+};

@@ -25,10 +25,14 @@ import { LoggerModule } from './modules/logger/logger.module';
         LOG_LEVEL: Joi.string()
           .pattern(new RegExp(commaDelimitedLogLevel))
           .default(`${LogLevel.Warn},${LogLevel.Error}`),
-        // TODO: figure out how to validate DISCORD_ env variables
         DISCORD_BOT_TOKEN: Joi.string().required(),
-        DISCORD_BOT_CHANNEL_ID: Joi.string().required(),
-        DOCKER_HUB_TOKEN: Joi.string().alphanum().length(24),
+        DISCORD_BOT_CHANNEL_ID: Joi.string().required().length(18),
+        DISCORD_BOT_ROLES_SERVER_ID: Joi.string().required().length(18),
+        DISCORD_BOT_ROLES_UI_ID: Joi.string().required().length(18),
+        DISCORD_BOT_USERS_SAID_ID: Joi.string().required().length(18),
+        DISCORD_BOT_USERS_WALEED_ID: Joi.string().required().length(18),
+        DISCORD_BOT_USERS_MARC_ID: Joi.string().required().length(18),
+        DOCKER_HUB_TOKEN: Joi.string().alphanum().required().length(24),
       }),
     }),
     EventEmitterModule.forRoot(),

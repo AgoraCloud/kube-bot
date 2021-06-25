@@ -2,7 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import { Module } from '@nestjs/common';
 import { DiscordService } from './discord.service';
 import { Client as DiscordClient } from 'discord.js';
-import { Config, DiscordConfig } from 'src/config/configuration.interface';
+import { Config, DiscordConfig } from '../../config/configuration.interface';
 
 const discordFactory = {
   provide: DiscordClient,

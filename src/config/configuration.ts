@@ -6,6 +6,7 @@ export default () => ({
   environment: process.env.NODE_ENV,
   port: parseInt(process.env.PORT, 10),
   logLevel: process.env.LOG_LEVEL.split(','),
+  domain: process.env.DOMAIN,
   discord: {
     bot: {
       token: process.env.DISCORD_BOT_TOKEN,

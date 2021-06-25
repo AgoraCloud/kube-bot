@@ -5,6 +5,7 @@ interface Config {
   version: string;
   environment: EnvironmentConfig;
   port: number;
+  domain: string;
   logLevel: LogLevel[];
   discord: DiscordConfig;
   dockerHub: DockerHubConfig;

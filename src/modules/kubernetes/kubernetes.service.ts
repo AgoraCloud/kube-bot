@@ -1,3 +1,6 @@
+import { KubernetesIngressPrefix } from './schemas/kubernetes-ingress-prefix.enum';
+import { Config } from '../../config/configuration.interface';
+import { ConfigService } from '@nestjs/config';
 import { DeploymentSucceededEvent } from './../../events/deployment-succeeded.event';
 import { DeploymentProcessingEvent } from './../../events/deployment-processing.event';
 import { DeploymentFailedEvent } from './../../events/deployment-failed.event';
@@ -6,7 +9,7 @@ import { KubernetesNamespace } from './schemas/kubernetes-namespace.enum';
 import { ContainerImagePushedEvent } from './../../events/container-image-pushed.event';
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
-import { Event } from 'src/events/events.enum';
+import { Event } from '../../events/events.enum';
 import {
   AppsV1Api,
   Informer,
@@ -28,11 +31,16 @@ import {
 
 @Injectable()
 export class KubernetesService implements OnModuleInit {
+  private readonly baseDomain: string;
+
   constructor(
     @Inject(KubeConfig) private readonly kc: KubeConfig,
     @Inject(AppsV1Api) private readonly k8sAppsV1Api: AppsV1Api,
     private readonly eventEmitter: EventEmitter2,
-  ) {}
+    private readonly configService: ConfigService<Config>,
+  ) {
+    this.baseDomain = this.configService.get<string>('domain');
+  }
 
   async onModuleInit(): Promise<void> {
     // Start the namespaced deployment informers for all Kubernetes namespaces
@@ -93,7 +101,11 @@ export class KubernetesService implements OnModuleInit {
     await informer.start();
   }
 
-  // TODO: add comments
+  /**
+   * Sends an event that notifies team members on Discord when a
+   * deployment update succeeds
+   * @param deployment the Kubernetes deployment
+   */
   private onDeploymentUpdate(deployment: V1Deployment): void {
     const conditions: V1DeploymentCondition[] = deployment.status?.conditions;
     if (!conditions) return;
@@ -121,20 +133,29 @@ export class KubernetesService implements OnModuleInit {
       imageRepository: DockerRepository;
       imageTag: DockerImageTag;
     } = this.getImageNameFromContainers(deploymentContainers);
-    // TODO: add ingress link
+
     this.eventEmitter.emit(
       Event.DeploymentSucceeded,
       new DeploymentSucceededEvent(
         deploymentImage.imageRepository,
         deploymentImage.imageTag,
-        '',
+        this.generateIngressLink(deploymentImage.imageTag),
       ),
     );
   }
 
-  // TODO: add comments
+  /**
+   * Extracts the failure reason from the Kubernetes deployment
+   * and sends an event that notifies team members on Discord
+   * with the deployment failure reason
+   * @param deployment the Kubernetes deployment
+   */
   private onDeploymentError(deployment: V1Deployment): void {
-    // TODO: finish this
+    const conditions: V1DeploymentCondition[] = deployment.status?.conditions;
+    if (!conditions) return;
+    const failureReason: string = conditions
+      .filter((condition: V1DeploymentCondition) => condition.message)
+      .join(' \n ');
 
     const deploymentContainers: V1Container[] =
       deployment.spec?.template?.spec?.containers;
@@ -143,13 +164,13 @@ export class KubernetesService implements OnModuleInit {
       imageRepository: DockerRepository;
       imageTag: DockerImageTag;
     } = this.getImageNameFromContainers(deploymentContainers);
-    // TODO: add failure link
+
     this.eventEmitter.emit(
       Event.DeploymentFailed,
       new DeploymentFailedEvent(
         deploymentImage.imageRepository,
         deploymentImage.imageTag,
-        '',
+        failureReason,
       ),
     );
   }
@@ -170,6 +191,25 @@ export class KubernetesService implements OnModuleInit {
       imageRepository: imageRepository as DockerRepository,
       imageTag: imageTag as DockerImageTag,
     };
+  }
+
+  /**
+   * Generates a Kubernetes ingress link from a container image tag
+   * @param imageTag the container image tag
+   * @returns an ingress link
+   */
+  private generateIngressLink(imageTag: DockerImageTag): string {
+    let ingressLink: string = this.baseDomain;
+    if (imageTag === DockerImageTag.DevelopLatest) {
+      ingressLink = `${KubernetesIngressPrefix.Development}.${ingressLink}`;
+    } else if (imageTag === DockerImageTag.SaidLatest) {
+      ingressLink = `${KubernetesIngressPrefix.Said}.${ingressLink}`;
+    } else if (imageTag === DockerImageTag.WaleedLatest) {
+      ingressLink = `${KubernetesIngressPrefix.Waleed}.${ingressLink}`;
+    } else if (imageTag === DockerImageTag.MarcLatest) {
+      ingressLink = `${KubernetesIngressPrefix.Marc}.${ingressLink}`;
+    }
+    return ingressLink;
   }
 
   /**
@@ -253,10 +293,3 @@ export class KubernetesService implements OnModuleInit {
     }
   }
 }
-
-// TODO: namespaces and ingress domains
-// agoracloud-prod (agoracloud.saidghamra.com)
-// agoracloud-dev (dev.agoracloud.saidghamra.com)
-// agoracloud-said (said.agoracloud.saidghamra.com)
-// agoracloud-waleed (waleed.agoracloud.saidghamra.com)
-// agoracloud-marc (marc.agoracloud.saidghamra.com)

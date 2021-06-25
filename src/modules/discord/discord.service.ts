@@ -5,13 +5,13 @@ import {
   DockerRepository,
   DockerImageTag,
 } from './../docker-hub/dto/docker-hub-webhook-payload.dto';
-import { Config, DiscordConfig } from 'src/config/configuration.interface';
+import { Config, DiscordConfig } from '../../config/configuration.interface';
 import { ConfigService } from '@nestjs/config';
 import { ContainerImagePushedEvent } from './../../events/container-image-pushed.event';
 import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Client as DiscordClient, TextChannel } from 'discord.js';
-import { Event } from 'src/events/events.enum';
+import { Event } from '../../events/events.enum';
 
 @Injectable()
 export class DiscordService implements OnModuleInit {
@@ -151,10 +151,18 @@ export class DiscordService implements OnModuleInit {
   private async handleDeploymentFailedEvent(
     payload: DeploymentFailedEvent,
   ): Promise<void> {
-    const mentionSnippet: string = this.getMentionSnippet(
+    let mentionSnippet: string = this.getMentionSnippet(
       payload.imageRepository,
       payload.imageTag,
     );
+    // If a Kubernetes deployment fails for any other team besides the server team,
+    // mention the server team
+    if (payload.imageRepository !== DockerRepository.AgoraCloudServer) {
+      mentionSnippet += ` ${this.getMentionSnippet(
+        DockerRepository.AgoraCloudServer,
+        DockerImageTag.DevelopLatest,
+      )}`;
+    }
     const fullContainerName = `\`${payload.imageRepository}:${payload.imageTag}\``;
     const failureReason = `\`\`\`${payload.failureReason}\`\`\``;
     await this.sendMessage(
@@ -176,7 +184,7 @@ export class DiscordService implements OnModuleInit {
     );
     const fullContainerName = `\`${payload.imageRepository}:${payload.imageTag}\``;
     await this.sendMessage(
-      `${mentionSnippet} ✔️ Kubernetes deployment for ${fullContainerName} succeeded. Please visit this [link](${payload.ingressLink}) to view your changes.`,
+      `${mentionSnippet} ✔️ Kubernetes deployment for ${fullContainerName} succeeded. Good work 👏. \nPlease visit this [link](${payload.ingressLink}) to view your changes.`,
     );
   }
 }

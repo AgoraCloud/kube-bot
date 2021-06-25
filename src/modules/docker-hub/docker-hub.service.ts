@@ -1,11 +1,11 @@
 import { ContainerImagePushedEvent } from './../../events/container-image-pushed.event';
 import { DockerHubWebhookPayloadDto } from './dto/docker-hub-webhook-payload.dto';
 import { InvalidDockerHubTokenException } from './../../exceptions/invalid-docker-hub-token.exception';
-import { Config, DockerHubConfig } from 'src/config/configuration.interface';
+import { Config, DockerHubConfig } from '../../config/configuration.interface';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { HttpService, Injectable, Logger } from '@nestjs/common';
-import { Event } from 'src/events/events.enum';
+import { Event } from '../../events/events.enum';
 
 @Injectable()
 export class DockerHubService {

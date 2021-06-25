@@ -25,6 +25,7 @@ import { LoggerModule } from './modules/logger/logger.module';
         LOG_LEVEL: Joi.string()
           .pattern(new RegExp(commaDelimitedLogLevel))
           .default(`${LogLevel.Warn},${LogLevel.Error}`),
+        DOMAIN: Joi.string().domain().required(),
         DISCORD_BOT_TOKEN: Joi.string().required(),
         DISCORD_BOT_CHANNEL_ID: Joi.string().required().length(18),
         DISCORD_BOT_ROLES_SERVER_ID: Joi.string().required().length(18),

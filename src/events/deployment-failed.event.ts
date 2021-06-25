@@ -4,14 +4,20 @@ import {
 } from './../modules/docker-hub/dto/docker-hub-webhook-payload.dto';
 
 /**
- * Payload of the container.image.pushed event
+ * Payload of the kubernetes.deployment.failed event
  */
-export class ContainerImagePushedEvent {
+export class DeploymentFailedEvent {
   imageRepository!: DockerRepository;
   imageTag!: DockerImageTag;
+  failureReason!: string;
 
-  constructor(imageRepository: DockerRepository, imageTag: DockerImageTag) {
+  constructor(
+    imageRepository: DockerRepository,
+    imageTag: DockerImageTag,
+    failureReason: string,
+  ) {
     this.imageRepository = imageRepository;
     this.imageTag = imageTag;
+    this.failureReason = failureReason;
   }
 }

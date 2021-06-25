@@ -1,3 +1,6 @@
+import { DeploymentProcessingEvent } from './../../events/deployment-processing.event';
+import { DeploymentFailedEvent } from './../../events/deployment-failed.event';
+import { DeploymentSucceededEvent } from './../../events/deployment-succeeded.event';
 import {
   DockerRepository,
   DockerImageTag,
@@ -119,6 +122,61 @@ export class DiscordService implements OnModuleInit {
     const fullContainerName = `\`${payload.imageRepository}:${payload.imageTag}\``;
     await this.sendMessage(
       `${mentionSnippet} 🔔 DockerHub webhook notification received for ${fullContainerName}`,
+    );
+  }
+
+  /**
+   * Handles the kubernetes.deployment.processing event
+   * @param payload the kubernetes.deployment.processing event payload
+   */
+  @OnEvent(Event.DeploymentProcessing)
+  private async handleDeploymentProcessingEvent(
+    payload: DeploymentProcessingEvent,
+  ): Promise<void> {
+    const mentionSnippet: string = this.getMentionSnippet(
+      payload.imageRepository,
+      payload.imageTag,
+    );
+    const fullContainerName = `\`${payload.imageRepository}:${payload.imageTag}\``;
+    await this.sendMessage(
+      `${mentionSnippet} 🧠 Kubernetes deployment for ${fullContainerName} is being processed`,
+    );
+  }
+
+  /**
+   * Handles the kubernetes.deployment.failed event
+   * @param payload the kubernetes.deployment.failed event payload
+   */
+  @OnEvent(Event.DeploymentFailed)
+  private async handleDeploymentFailedEvent(
+    payload: DeploymentFailedEvent,
+  ): Promise<void> {
+    const mentionSnippet: string = this.getMentionSnippet(
+      payload.imageRepository,
+      payload.imageTag,
+    );
+    const fullContainerName = `\`${payload.imageRepository}:${payload.imageTag}\``;
+    const failureReason = `\`\`\`${payload.failureReason}\`\`\``;
+    await this.sendMessage(
+      `${mentionSnippet} ❌ Kubernetes deployment for ${fullContainerName} failed ${failureReason}`,
+    );
+  }
+
+  /**
+   * Handles the kubernetes.deployment.succeeded event
+   * @param payload the kubernetes.deployment.succeeded event payload
+   */
+  @OnEvent(Event.DeploymentSucceeded)
+  private async handleDeploymentSucceededEvent(
+    payload: DeploymentSucceededEvent,
+  ): Promise<void> {
+    const mentionSnippet: string = this.getMentionSnippet(
+      payload.imageRepository,
+      payload.imageTag,
+    );
+    const fullContainerName = `\`${payload.imageRepository}:${payload.imageTag}\``;
+    await this.sendMessage(
+      `${mentionSnippet} ✔️ Kubernetes deployment for ${fullContainerName} succeeded. Please visit this [link](${payload.ingressLink}) to view your changes.`,
     );
   }
 }

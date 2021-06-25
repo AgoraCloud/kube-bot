@@ -4,9 +4,9 @@ import {
 } from './../modules/docker-hub/dto/docker-hub-webhook-payload.dto';
 
 /**
- * Payload of the container.image.pushed event
+ * Payload of the kubernetes.deployment.processing event
  */
-export class ContainerImagePushedEvent {
+export class DeploymentProcessingEvent {
   imageRepository!: DockerRepository;
   imageTag!: DockerImageTag;
 

@@ -199,17 +199,19 @@ export class KubernetesService implements OnModuleInit {
    * @returns an ingress link
    */
   private generateIngressLink(imageTag: DockerImageTag): string {
-    let ingressLink: string = this.baseDomain;
+    let ingressPrefix: KubernetesIngressPrefix;
     if (imageTag === DockerImageTag.DevelopLatest) {
-      ingressLink = `${KubernetesIngressPrefix.Development}.${ingressLink}`;
+      ingressPrefix = KubernetesIngressPrefix.Development;
     } else if (imageTag === DockerImageTag.SaidLatest) {
-      ingressLink = `${KubernetesIngressPrefix.Said}.${ingressLink}`;
+      ingressPrefix = KubernetesIngressPrefix.Said;
     } else if (imageTag === DockerImageTag.WaleedLatest) {
-      ingressLink = `${KubernetesIngressPrefix.Waleed}.${ingressLink}`;
+      ingressPrefix = KubernetesIngressPrefix.Waleed;
     } else if (imageTag === DockerImageTag.MarcLatest) {
-      ingressLink = `${KubernetesIngressPrefix.Marc}.${ingressLink}`;
+      ingressPrefix = KubernetesIngressPrefix.Marc;
     }
-    return ingressLink;
+    return ingressPrefix
+      ? `${ingressPrefix}.${this.baseDomain}`
+      : this.baseDomain;
   }
 
   /**

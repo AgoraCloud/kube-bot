@@ -1,3 +1,4 @@
+import { HealthModule } from './modules/health/health.module';
 import { LoggerMiddleware } from './middlewares/logger.middleware';
 import { commaDelimitedLogLevel } from './utils/regex.patterns';
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
@@ -41,6 +42,7 @@ import { LoggerModule } from './modules/logger/logger.module';
     DockerHubModule,
     KubernetesModule,
     LoggerModule,
+    HealthModule,
   ],
 })
 export class AppModule implements NestModule {

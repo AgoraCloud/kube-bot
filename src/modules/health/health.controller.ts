@@ -6,7 +6,7 @@ import {
   MemoryHealthIndicator,
 } from '@nestjs/terminus';
 
-@Controller('api/health')
+@Controller('health')
 export class HealthController {
   constructor(
     private readonly healthCheckService: HealthCheckService,

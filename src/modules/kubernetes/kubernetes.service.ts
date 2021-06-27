@@ -7,7 +7,7 @@ import { DeploymentFailedEvent } from './../../events/deployment-failed.event';
 import { KubernetesDeployment } from './schemas/kubernetes-deployment.enum';
 import { KubernetesNamespace } from './schemas/kubernetes-namespace.enum';
 import { ContainerImagePushedEvent } from './../../events/container-image-pushed.event';
-import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { Event } from '../../events/events.enum';
 import {
@@ -15,6 +15,7 @@ import {
   Informer,
   KubeConfig,
   makeInformer,
+  PatchUtils,
   V1Container,
   V1Deployment,
   V1DeploymentCondition,
@@ -32,6 +33,7 @@ import {
 @Injectable()
 export class KubernetesService implements OnModuleInit {
   private readonly baseDomain: string;
+  private readonly logger: Logger = new Logger(KubernetesService.name);
 
   constructor(
     @Inject(KubeConfig) private readonly kc: KubeConfig,
@@ -47,6 +49,9 @@ export class KubernetesService implements OnModuleInit {
     for (const namespace of Object.values(KubernetesNamespace)) {
       await this.startNamespacedDeploymentInformer(namespace);
     }
+    this.logger.log(
+      '👀 Kubernetes deployment informers are initialized and running',
+    );
   }
 
   /**
@@ -72,6 +77,15 @@ export class KubernetesService implements OnModuleInit {
               deployedAt: `${new Date()}`,
             },
           },
+        },
+      },
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      {
+        headers: {
+          'Content-type': PatchUtils.PATCH_FORMAT_STRATEGIC_MERGE_PATCH,
         },
       },
     );
@@ -284,6 +298,10 @@ export class KubernetesService implements OnModuleInit {
       );
     } catch (err) {
       const failureReason: string = err.response?.body?.message;
+      this.logger.error({
+        error: `Error updating deployment for ${payload.imageRepository}:${payload.imageTag}`,
+        failureReason,
+      });
       this.eventEmitter.emit(
         Event.DeploymentFailed,
         new DeploymentFailedEvent(

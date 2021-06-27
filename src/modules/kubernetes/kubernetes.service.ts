@@ -102,10 +102,8 @@ export class KubernetesService implements OnModuleInit {
   private async startNamespacedEventInformer(namespace: string): Promise<void> {
     const informer: Informer<CoreV1Event> = makeInformer(
       this.kc,
-      `/apis/events.k8s.io/v1/namespaces/${namespace}/events`,
-      () => {
-        return this.k8sCoreV1Api.listNamespacedEvent(namespace);
-      },
+      `/api/v1/namespaces/${namespace}/events`,
+      () => this.k8sCoreV1Api.listNamespacedEvent(namespace),
     );
     informer.on('add', (event: CoreV1Event) => this.onEventAdded(event));
     await informer.start();

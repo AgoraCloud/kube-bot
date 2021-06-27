@@ -9,7 +9,7 @@ rules:
     verbs: ["patch"]
   - apiGroups: [""]
     resources: ["pods"]
-    verbs: ["read"]
+    verbs: ["get"]
   - apiGroups: [""]
     resources: ["events"]
     verbs: ["list", "watch"]

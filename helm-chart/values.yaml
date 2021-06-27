@@ -1,0 +1,73 @@
+image:
+  repository: agoracloud/kube-bot
+  pullPolicy: Always
+  tag: latest
+
+# NOTE: Everything in the config section below has to be filled out
+config:
+  # kube-bot log level, comma delimited string, defaults to 'warn,error'
+  logLevel: 'warn,error'
+  # The domain the kube-bot api will be accessed from, ex: https://bot.agoracloud.mydomain.com
+  domain:
+  # Discord bot configuration
+  discordBot:
+    # The discord bot token
+    token:
+    # The id of the Discord channel used by the bot to send messages
+    channelId:
+    # Discord role ids
+    roleIds:
+      # The Discord @server role id
+      server:
+      # The Discord @ui role id
+      ui:
+    # Discord user ids
+    userIds:
+      # The Discord @said user id
+      said:
+      # The Discord @marc user id
+      marc:
+      # The Discord @waleed user id
+      waleed: sd
+  # DockerHub configuration
+  dockerHub:
+    # The DockerHub webhook token
+    token:
+
+replicaCount: 1
+service:
+  type: ClusterIP
+  port: 80
+resources:
+  {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+ingress:
+  enabled: false
+  annotations:
+    {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

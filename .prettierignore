@@ -1,0 +1,2 @@
+# Ignore all helm chart files
+helm-chart/*

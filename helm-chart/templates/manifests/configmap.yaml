@@ -1,0 +1,8 @@
+{{- $chartName := include "helm-chart.name" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $chartName }}
+data:
+  log_level: {{ .Values.config.logLevel }}
+  domain: {{ .Values.config.domain | quote }}

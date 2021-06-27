@@ -1,0 +1,107 @@
+{{- $chartName := include "helm-chart.name" . -}}
+{{- $baseChartName := .Chart.Name -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $chartName }}
+  labels:
+    {{- include "helm-chart.labels" . | nindent 4 }}
+    app: {{ $baseChartName }}
+spec:
+{{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+{{- end }}
+  selector:
+    matchLabels:
+      {{- include "helm-chart.selectorLabels" . | nindent 6 }}
+      app: {{ $baseChartName }}
+  template:
+    metadata:
+      labels:
+        {{- include "helm-chart.selectorLabels" . | nindent 8 }}
+        app: {{ $baseChartName }}
+    spec:
+      serviceAccountName: {{ $chartName }}
+      containers:
+        - name: {{ $chartName }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 3000
+          readinessProbe:
+            httpGet:
+              path: /api/health/readiness
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health/liveness
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          env:
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ $chartName }}
+                  key: log_level
+            - name: DOMAIN
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ $chartName }}
+                  key: domain
+            - name: DISCORD_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $chartName }}
+                  key: discord_bot_token
+            - name: DISCORD_BOT_CHANNEL_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $chartName }}
+                  key: discord_bot_channel_id
+            - name: DISCORD_BOT_ROLES_SERVER_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $chartName }}
+                  key: discord_bot_roles_server_id
+            - name: DISCORD_BOT_ROLES_UI_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $chartName }}
+                  key: discord_bot_roles_ui_id
+            - name: DISCORD_BOT_USERS_SAID_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $chartName }}
+                  key: discord_bot_users_said_id
+            - name: DISCORD_BOT_USERS_MARC_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $chartName }}
+                  key: discord_bot_users_marc_id
+            - name: DISCORD_BOT_USERS_WALEED_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $chartName }}
+                  key: discord_bot_users_waleed_id
+            - name: DOCKER_HUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $chartName }}
+                  key: docker_hub_token
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

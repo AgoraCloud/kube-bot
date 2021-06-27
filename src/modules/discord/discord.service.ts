@@ -10,7 +10,12 @@ import { ConfigService } from '@nestjs/config';
 import { ContainerImagePushedEvent } from './../../events/container-image-pushed.event';
 import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { Client as DiscordClient, TextChannel } from 'discord.js';
+import {
+  Client as DiscordClient,
+  Message,
+  MessageEmbed,
+  TextChannel,
+} from 'discord.js';
 import { Event } from '../../events/events.enum';
 
 @Injectable()
@@ -43,7 +48,7 @@ export class DiscordService implements OnModuleInit {
        */
       setTimeout(() => {
         reject('🤖 Timed out initializing KubeBot');
-      }, 5000);
+      }, 10000);
     }).then(() => this.logger.log('🤖 KubeBot is initialized and running'));
   }
 
@@ -63,9 +68,13 @@ export class DiscordService implements OnModuleInit {
   /**
    * Sends a message to the bot channel
    * @param message the message to send
+   * @param an optional message embed
    */
-  private async sendMessage(message: string): Promise<void> {
-    await this.botChannel.send(message);
+  private async sendMessage(
+    message: string,
+    embed?: MessageEmbed,
+  ): Promise<Message> {
+    return this.botChannel.send(message, { embed });
   }
 
   /**
@@ -108,6 +117,40 @@ export class DiscordService implements OnModuleInit {
   }
 
   /**
+   * Generates a Discord message embed with the ingress link
+   * @param imageTag the Docker image tag
+   * @param ingressLink the Kubernetes ingress link
+   * @returns a configured Discord message embed
+   */
+  private getIngressMessageEmbed(
+    imageTag: DockerImageTag,
+    ingressLink: string,
+  ): MessageEmbed {
+    let embedTitle = 'AgoraCloud ';
+    if (imageTag === DockerImageTag.MainLatest) {
+      embedTitle += 'Production';
+    } else if (imageTag === DockerImageTag.DevelopLatest) {
+      embedTitle += 'Development';
+    } else if (imageTag === DockerImageTag.SaidLatest) {
+      embedTitle += 'Said';
+    } else if (imageTag === DockerImageTag.MarcLatest) {
+      embedTitle += 'Marc';
+    } else if (imageTag === DockerImageTag.WaleedLatest) {
+      embedTitle += 'Waleed';
+    }
+    const ingressEmbed: MessageEmbed = new MessageEmbed()
+      .setColor('#2196F3')
+      .setTitle(embedTitle)
+      .setURL(ingressLink)
+      .setAuthor('KubeBot')
+      .setThumbnail(
+        'https://user-images.githubusercontent.com/35788699/104863943-90900c00-5905-11eb-98e4-eaeb05bcc0f6.png',
+      )
+      .setTimestamp();
+    return ingressEmbed;
+  }
+
+  /**
    * Handles the container.image.pushed event
    * @param payload the container.image.pushed event payload
    */
@@ -139,7 +182,7 @@ export class DiscordService implements OnModuleInit {
     );
     const fullContainerName = `\`${payload.imageRepository}:${payload.imageTag}\``;
     await this.sendMessage(
-      `${mentionSnippet} 🧠 Kubernetes deployment for ${fullContainerName} is being processed`,
+      `${mentionSnippet} 👨‍💻 Kubernetes deployment for ${fullContainerName} is being processed`,
     );
   }
 
@@ -184,7 +227,8 @@ export class DiscordService implements OnModuleInit {
     );
     const fullContainerName = `\`${payload.imageRepository}:${payload.imageTag}\``;
     await this.sendMessage(
-      `${mentionSnippet} ✔️ Kubernetes deployment for ${fullContainerName} succeeded. Good work 👏. \nPlease visit this [link](${payload.ingressLink}) to view your changes.`,
+      `${mentionSnippet} ✅ Kubernetes deployment for ${fullContainerName} succeeded. Good work 👏. Please click below to view your changes.`,
+      this.getIngressMessageEmbed(payload.imageTag, payload.ingressLink),
     );
   }
 }

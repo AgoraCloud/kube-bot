@@ -1,3 +1,4 @@
+import { DockerImageName } from './../docker-hub/dto/docker-hub-webhook-payload.dto';
 import { KubernetesIngressPrefix } from './schemas/kubernetes-ingress-prefix.enum';
 import { Config } from '../../config/configuration.interface';
 import { ConfigService } from '@nestjs/config';
@@ -12,23 +13,22 @@ import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { Event } from '../../events/events.enum';
 import {
   AppsV1Api,
+  CoreV1Api,
+  CoreV1Event,
   Informer,
   KubeConfig,
   makeInformer,
   PatchUtils,
   V1Container,
   V1Deployment,
-  V1DeploymentCondition,
+  V1ObjectReference,
 } from '@kubernetes/client-node';
 import {
   DockerImageTag,
   DockerRepository,
 } from '../docker-hub/dto/docker-hub-webhook-payload.dto';
 import { IncomingMessage } from 'http';
-import {
-  DeploymentConditionStatus,
-  DeploymentConditionType,
-} from './schemas/kubernetes-deployment-conditions.enum';
+import { EventReason, EventRelatedKind } from './schemas/kubernetes-event.enum';
 
 @Injectable()
 export class KubernetesService implements OnModuleInit {
@@ -38,6 +38,7 @@ export class KubernetesService implements OnModuleInit {
   constructor(
     @Inject(KubeConfig) private readonly kc: KubeConfig,
     @Inject(AppsV1Api) private readonly k8sAppsV1Api: AppsV1Api,
+    @Inject(CoreV1Api) private readonly k8sCoreV1Api: CoreV1Api,
     private readonly eventEmitter: EventEmitter2,
     private readonly configService: ConfigService<Config>,
   ) {
@@ -45,12 +46,12 @@ export class KubernetesService implements OnModuleInit {
   }
 
   async onModuleInit(): Promise<void> {
-    // Start the namespaced deployment informers for all Kubernetes namespaces
+    // Start the namespaced event informers for all Kubernetes namespaces
     for (const namespace of Object.values(KubernetesNamespace)) {
-      await this.startNamespacedDeploymentInformer(namespace);
+      await this.startNamespacedEventInformer(namespace);
     }
     this.logger.log(
-      '👀 Kubernetes deployment informers are initialized and running',
+      '👀 Kubernetes event informers are initialized and running',
     );
   }
 
@@ -75,7 +76,7 @@ export class KubernetesService implements OnModuleInit {
           template: {
             metadata: {
               labels: {
-                deployedAt: `${new Date()}`,
+                deployedAt: `${new Date().getTime()}`,
               },
             },
           },
@@ -94,107 +95,85 @@ export class KubernetesService implements OnModuleInit {
   }
 
   /**
-   * Set up and start the Kubernetes deployment informer for a
+   * Set up and start the Kubernetes event informer for a
    * specific namespace
-   * @param namespace The deployments Kubernetes namespace
+   * @param namespace The events Kubernetes namespace
    */
-  private async startNamespacedDeploymentInformer(
-    namespace: KubernetesNamespace,
-  ): Promise<void> {
-    const informer: Informer<V1Deployment> = makeInformer(
+  private async startNamespacedEventInformer(namespace: string): Promise<void> {
+    const informer: Informer<CoreV1Event> = makeInformer(
       this.kc,
-      `/apis/apps/v1/namespaces/${namespace}/deployments`,
+      `/apis/events.k8s.io/v1/namespaces/${namespace}/events`,
       () => {
-        return this.k8sAppsV1Api.listNamespacedDeployment(namespace);
+        return this.k8sCoreV1Api.listNamespacedEvent(namespace);
       },
     );
-    informer.on('update', (deployment: V1Deployment) =>
-      this.onDeploymentUpdate(deployment),
-    );
-    informer.on('error', (deployment: V1Deployment) =>
-      this.onDeploymentError(deployment),
-    );
+    informer.on('add', (event: CoreV1Event) => this.onEventAdded(event));
     await informer.start();
   }
 
   /**
    * Sends an event that notifies team members on Discord when a
    * deployment update succeeds
-   * @param deployment the Kubernetes deployment
+   * @param event the Kubernetes event
    */
-  private onDeploymentUpdate(deployment: V1Deployment): void {
-    const conditions: V1DeploymentCondition[] = deployment.status?.conditions;
-    if (!conditions) return;
-    const availableDeploymentConditionIndex: number = conditions.findIndex(
-      (c: V1DeploymentCondition) =>
-        c.type === DeploymentConditionType.Available &&
-        c.status === DeploymentConditionStatus.True,
-    );
-    const progressingDeploymentConditionIndex: number = conditions.findIndex(
-      (c: V1DeploymentCondition) =>
-        c.type === DeploymentConditionType.Progressing &&
-        c.status === DeploymentConditionStatus.True,
-    );
+  private async onEventAdded(event: CoreV1Event): Promise<void> {
+    const eventRegarding: V1ObjectReference = (event as any)
+      .regarding as V1ObjectReference;
     if (
-      availableDeploymentConditionIndex === -1 ||
-      progressingDeploymentConditionIndex === -1
+      event.reason !== EventReason.Started ||
+      !eventRegarding ||
+      eventRegarding.kind !== EventRelatedKind.Pod ||
+      !eventRegarding.name ||
+      !eventRegarding.namespace
     ) {
       return;
     }
 
-    const deploymentContainers: V1Container[] =
-      deployment.spec?.template?.spec?.containers;
-    if (!deploymentContainers) return;
-    const deploymentImage: {
-      imageRepository: DockerRepository;
-      imageTag: DockerImageTag;
-    } = this.getImageNameFromContainers(deploymentContainers);
+    if (
+      (eventRegarding.namespace === KubernetesNamespace.AgoraCloudWaleed ||
+        eventRegarding.namespace === KubernetesNamespace.AgoraCloudMarc) &&
+      eventRegarding.name.includes(DockerImageName.Server)
+    ) {
+      return;
+    }
+    if (
+      eventRegarding.namespace === KubernetesNamespace.AgoraCloudSaid &&
+      eventRegarding.name.includes(DockerImageName.Ui)
+    ) {
+      return;
+    }
 
-    this.eventEmitter.emit(
-      Event.DeploymentSucceeded,
-      new DeploymentSucceededEvent(
-        deploymentImage.imageRepository,
-        deploymentImage.imageTag,
-        this.generateIngressLink(deploymentImage.imageTag),
-      ),
-    );
+    try {
+      const { body: updatedPod } = await this.k8sCoreV1Api.readNamespacedPod(
+        eventRegarding.name,
+        eventRegarding.namespace,
+      );
+      const podContainers: V1Container[] = updatedPod.spec?.containers;
+      if (!podContainers) return;
+      const deploymentImage: {
+        imageRepository: DockerRepository;
+        imageTag: DockerImageTag;
+      } = this.getImageNameFromContainers(podContainers);
+      this.eventEmitter.emit(
+        Event.DeploymentSucceeded,
+        new DeploymentSucceededEvent(
+          deploymentImage.imageRepository,
+          deploymentImage.imageTag,
+          this.generateIngressLink(deploymentImage.imageTag),
+        ),
+      );
+    } catch (err) {
+      this.logger.error({
+        error: `Error retrieving pod ${eventRegarding.name} in namespace ${eventRegarding.namespace}`,
+        failureReason: err.response?.body?.message,
+      });
+    }
   }
 
   /**
-   * Extracts the failure reason from the Kubernetes deployment
-   * and sends an event that notifies team members on Discord
-   * with the deployment failure reason
-   * @param deployment the Kubernetes deployment
-   */
-  private onDeploymentError(deployment: V1Deployment): void {
-    const conditions: V1DeploymentCondition[] = deployment.status?.conditions;
-    if (!conditions) return;
-    const failureReason: string = conditions
-      .filter((condition: V1DeploymentCondition) => condition.message)
-      .join(' \n ');
-
-    const deploymentContainers: V1Container[] =
-      deployment.spec?.template?.spec?.containers;
-    if (!deploymentContainers) return;
-    const deploymentImage: {
-      imageRepository: DockerRepository;
-      imageTag: DockerImageTag;
-    } = this.getImageNameFromContainers(deploymentContainers);
-
-    this.eventEmitter.emit(
-      Event.DeploymentFailed,
-      new DeploymentFailedEvent(
-        deploymentImage.imageRepository,
-        deploymentImage.imageTag,
-        failureReason,
-      ),
-    );
-  }
-
-  /**
-   * Get a Kubernetes deployments image from the deployments containers
-   * @param containers the Kubernetes deployment containers
-   * @returns the deployments image
+   * Gets the container image name from a Kubernetes container
+   * @param containers the Kubernetes containers
+   * @returns the container image name
    */
   private getImageNameFromContainers(containers: V1Container[]): {
     imageRepository: DockerRepository;
@@ -226,8 +205,8 @@ export class KubernetesService implements OnModuleInit {
       ingressPrefix = KubernetesIngressPrefix.Marc;
     }
     return ingressPrefix
-      ? `${ingressPrefix}.${this.baseDomain}`
-      : this.baseDomain;
+      ? `https://${ingressPrefix}.${this.baseDomain}`
+      : `https://${this.baseDomain}`;
   }
 
   /**
@@ -291,13 +270,15 @@ export class KubernetesService implements OnModuleInit {
           );
         }
       }
-      this.eventEmitter.emit(
-        Event.DeploymentProcessing,
-        new DeploymentProcessingEvent(
-          payload.imageRepository,
-          payload.imageTag,
-        ),
-      );
+      setTimeout(() => {
+        this.eventEmitter.emit(
+          Event.DeploymentProcessing,
+          new DeploymentProcessingEvent(
+            payload.imageRepository,
+            payload.imageTag,
+          ),
+        );
+      }, 1000);
     } catch (err) {
       const failureReason: string = err.response?.body?.message;
       this.logger.error({

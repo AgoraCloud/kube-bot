@@ -6,4 +6,10 @@ metadata:
 rules:
   - apiGroups: ["apps"]
     resources: ["deployments"]
-    verbs: ["list", "patch"]
+    verbs: ["patch"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["read"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["watch"]

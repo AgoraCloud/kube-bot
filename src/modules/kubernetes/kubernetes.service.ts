@@ -74,7 +74,9 @@ export class KubernetesService implements OnModuleInit {
         spec: {
           template: {
             metadata: {
-              deployedAt: `${new Date()}`,
+              labels: {
+                deployedAt: `${new Date()}`,
+              },
             },
           },
         },

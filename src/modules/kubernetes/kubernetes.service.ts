@@ -115,36 +115,35 @@ export class KubernetesService implements OnModuleInit {
    * @param event the Kubernetes event
    */
   private async onEventAdded(event: CoreV1Event): Promise<void> {
-    const eventRegarding: V1ObjectReference = (event as any)
-      .regarding as V1ObjectReference;
+    const involvedObject: V1ObjectReference = event.involvedObject;
     if (
       event.reason !== EventReason.Started ||
-      !eventRegarding ||
-      eventRegarding.kind !== EventRelatedKind.Pod ||
-      !eventRegarding.name ||
-      !eventRegarding.namespace
+      !involvedObject ||
+      involvedObject.kind !== EventRelatedKind.Pod ||
+      !involvedObject.name ||
+      !involvedObject.namespace
     ) {
       return;
     }
 
     if (
-      (eventRegarding.namespace === KubernetesNamespace.AgoraCloudWaleed ||
-        eventRegarding.namespace === KubernetesNamespace.AgoraCloudMarc) &&
-      eventRegarding.name.includes(DockerImageName.Server)
+      (involvedObject.namespace === KubernetesNamespace.AgoraCloudWaleed ||
+        involvedObject.namespace === KubernetesNamespace.AgoraCloudMarc) &&
+      involvedObject.name.includes(DockerImageName.Server)
     ) {
       return;
     }
     if (
-      eventRegarding.namespace === KubernetesNamespace.AgoraCloudSaid &&
-      eventRegarding.name.includes(DockerImageName.Ui)
+      involvedObject.namespace === KubernetesNamespace.AgoraCloudSaid &&
+      involvedObject.name.includes(DockerImageName.Ui)
     ) {
       return;
     }
 
     try {
       const { body: updatedPod } = await this.k8sCoreV1Api.readNamespacedPod(
-        eventRegarding.name,
-        eventRegarding.namespace,
+        involvedObject.name,
+        involvedObject.namespace,
       );
       const podContainers: V1Container[] = updatedPod.spec?.containers;
       if (!podContainers) return;
@@ -162,7 +161,7 @@ export class KubernetesService implements OnModuleInit {
       );
     } catch (err) {
       this.logger.error({
-        error: `Error retrieving pod ${eventRegarding.name} in namespace ${eventRegarding.namespace}`,
+        error: `Error retrieving pod ${involvedObject.name} in namespace ${involvedObject.namespace}`,
         failureReason: err.response?.body?.message,
       });
     }

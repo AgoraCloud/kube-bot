@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/35788699/116828155-ed3ccd00-ab6a-11eb-9327-4d99bd169bdc.png" alt="Logo Cropped">
+  <img src="https://user-images.githubusercontent.com/35788699/124201339-cab12c80-daa5-11eb-9e76-99ed1a626529.png" alt="Logo Cropped" width="256" height="256">
 </p>
 <p align="center">
     <a href="https://github.com/AgoraCloud/kube-bot/issues"><img src="https://img.shields.io/github/issues/AgoraCloud/kube-bot" alt="GitHub issues"></a> <a href="https://github.com/AgoraCloud/kube-bot/blob/main/LICENSE"><img src="https://img.shields.io/github/license/AgoraCloud/kube-bot" alt="GitHub license"></a> <img alt="GitHub release (latest by date)" src="https://img.shields.io/github/v/release/AgoraCloud/kube-bot"> <img src="https://img.shields.io/github/release-date/AgoraCloud/kube-bot" alt="GitHub Release Date"> <img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/agoracloud/kube-bot"> <img src="https://img.shields.io/github/workflow/status/AgoraCloud/kube-bot/main_versioned_push" alt="GitHub Workflow Status"> <img src="https://img.shields.io/github/contributors/AgoraCloud/kube-bot" alt="GitHub contributors"> <img src="https://img.shields.io/github/commit-activity/m/AgoraCloud/kube-bot" alt="GitHub commit activity">

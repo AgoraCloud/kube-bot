@@ -144,7 +144,7 @@ export class DiscordService implements OnModuleInit {
       .setURL(ingressLink)
       .setAuthor('KubeBot')
       .setThumbnail(
-        'https://user-images.githubusercontent.com/35788699/104863943-90900c00-5905-11eb-98e4-eaeb05bcc0f6.png',
+        'https://user-images.githubusercontent.com/35788699/124201339-cab12c80-daa5-11eb-9e76-99ed1a626529.png',
       )
       .setTimestamp();
     return ingressEmbed;

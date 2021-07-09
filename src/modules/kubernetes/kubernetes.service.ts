@@ -106,6 +106,11 @@ export class KubernetesService implements OnModuleInit {
       () => this.k8sCoreV1Api.listNamespacedEvent(namespace),
     );
     informer.on('add', (event: CoreV1Event) => this.onEventAdded(event));
+    informer.on('error', () => {
+      setTimeout(() => {
+        informer.start();
+      }, 5000);
+    });
     await informer.start();
   }
 

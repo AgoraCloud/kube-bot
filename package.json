@@ -1,6 +1,6 @@
 {
   "name": "kube-bot",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "AgoraClouds Kubernetes Bot",
   "author": "AgoraCloud",
   "private": true,

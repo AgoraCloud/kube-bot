@@ -43,13 +43,15 @@ export class DiscordService implements OnModuleInit {
       });
 
       /**
-       * Stop the app from starting up if KubeBot is not initialized
+       * Stop the app from starting up if the Discord client is not initialized
        * and running in 10 seconds
        */
       setTimeout(() => {
-        reject('🤖 Timed out initializing KubeBot');
+        reject('🤖 Timed out initializing the Discord client');
       }, 10000);
-    }).then(() => this.logger.log('🤖 KubeBot is initialized and running'));
+    }).then(() =>
+      this.logger.log('🤖 Discord client is initialized and running'),
+    );
   }
 
   /**

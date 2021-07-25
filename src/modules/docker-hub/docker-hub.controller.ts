@@ -16,7 +16,7 @@ export class DockerHubController {
   onContainerImagePush(
     @Param() { token }: TokenParamDto,
     @Body() dockerHubWebhookPayloadDto: DockerHubWebhookPayloadDto,
-  ) {
+  ): Promise<void> {
     return this.dockerHubService.onContainerImagePush(
       token,
       dockerHubWebhookPayloadDto,

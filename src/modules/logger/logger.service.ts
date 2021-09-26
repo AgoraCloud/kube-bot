@@ -4,11 +4,11 @@ import { Config, LogLevel } from '../../config/configuration.interface';
 
 @Injectable()
 export class LoggerService extends Logger {
-  private readonly logLevel: boolean;
-  private readonly errorLevel: boolean;
-  private readonly warnLevel: boolean;
-  private readonly debugLevel: boolean;
-  private readonly verboseLevel: boolean;
+  private logLevel: boolean;
+  private errorLevel: boolean;
+  private warnLevel: boolean;
+  private debugLevel: boolean;
+  private verboseLevel: boolean;
 
   constructor(private readonly configService: ConfigService<Config>) {
     super();
